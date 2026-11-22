@@ -1,0 +1,157 @@
+classDiagram
+    direction TB
+
+    namespace modelo {
+        class Vehiculo {
+            <<abstract>>
+            -String placa
+            -String marca
+            -String modelo
+            -int anio
+            -int kilometrajeActual
+            -EstadoDisponibilidad disponibilidad
+            -Repartidor repartidor
+            -List~Mantenimiento~ historial
+            +Vehiculo(String placa, String marca, String modelo, int anio, int kilometrajeActual)
+            +getTipo() String*
+            +getServiciosAplicables() List~TipoServicio~*
+            +agregarMantenimiento(Mantenimiento mantenimiento) void
+            +getUltimoMantenimiento(TipoServicio tipo) Mantenimiento
+            +mostrarDatos() String
+            +getPlaca() String
+            +getKilometrajeActual() int
+            +setKilometrajeActual(int km) void
+            +getDisponibilidad() EstadoDisponibilidad
+            +setDisponibilidad(EstadoDisponibilidad estado) void
+            +getRepartidor() Repartidor
+            +setRepartidor(Repartidor repartidor) void
+            +getHistorial() List~Mantenimiento~
+        }
+        class Moto {
+            +getTipo() String
+            +getServiciosAplicables() List~TipoServicio~
+        }
+        class MotoElectrica {
+            +getTipo() String
+            +getServiciosAplicables() List~TipoServicio~
+        }
+        class Repartidor {
+            -String nombre
+            -String cedula
+            -String telefono
+            +Repartidor(String nombre, String cedula, String telefono)
+            +getNombre() String
+            +getCedula() String
+            +getTelefono() String
+        }
+        class Mantenimiento {
+            -TipoServicio tipo
+            -LocalDate fecha
+            -int kilometraje
+            -double costo
+            -String observaciones
+            +Mantenimiento(TipoServicio tipo, LocalDate fecha, int kilometraje, double costo, String observaciones)
+            +getProximoKm() int
+            +getTipo() TipoServicio
+            +getFecha() LocalDate
+            +getKilometraje() int
+            +getCosto() double
+        }
+        class EstadoServicio {
+            -TipoServicio tipo
+            -EstadoMantenimiento estado
+            -int proximoKm
+            -int kmRestantes
+            +getTipo() TipoServicio
+            +getEstado() EstadoMantenimiento
+            +getKmRestantes() int
+        }
+        class TipoServicio {
+            <<enumeration>>
+            ACEITE
+            CADENA
+            FRENOS
+            LLANTAS
+            +getIntervaloKm() int
+        }
+        class EstadoMantenimiento {
+            <<enumeration>>
+            SIN_HISTORIAL
+            AL_DIA
+            PROXIMO
+            VENCIDO
+        }
+        class EstadoDisponibilidad {
+            <<enumeration>>
+            DISPONIBLE
+            ASIGNADA
+            NO_DISPONIBLE
+        }
+    }
+
+    namespace negocio {
+        class GestorFlota {
+            -List~Vehiculo~ vehiculos
+            -List~Repartidor~ repartidores
+            +GestorFlota(GestorAlertas gestorAlertas)
+            +registrarRepartidor(Repartidor repartidor) void
+            +registrarVehiculo(Vehiculo vehiculo) void
+            +asignarMoto(String cedula, String placa) String
+            +liberarMoto(String cedula, String placa) String
+            +registrarMantenimiento(String placa, TipoServicio tipo, LocalDate fecha, int km, double costo, String obs) String
+            +consultarHistorial(String placa, TipoServicio tipo, LocalDate inicio, LocalDate fin) List~Mantenimiento~
+            +actualizarKilometraje(String placa, int nuevoKm) void
+            +obtenerVehiculo(String placa) Vehiculo
+            +obtenerRepartidor(String cedula) Repartidor
+            +totalCostos(List~Mantenimiento~ lista) double$
+        }
+        class GestorAlertas {
+            +calcularEstados(Vehiculo moto) List~EstadoServicio~
+            +estadoGeneral(Vehiculo moto) EstadoMantenimiento
+            +informeEstado(Vehiculo moto) String
+            +actualizarDisponibilidad(Vehiculo moto) void
+            +generarAlertas(List~Vehiculo~ motos, EstadoMantenimiento filtro) List~String~
+        }
+        class GestorReportes {
+            +GestorReportes(GestorFlota flota, GestorAlertas alertas)
+            +gastoPorMoto(String placa, LocalDate inicio, LocalDate fin) String
+            +reporteFlota(EstadoMantenimiento filtro) String
+        }
+        class Validador {
+            +texto(String campo, String valor) String$
+            +entero(String campo, String valor) int$
+            +decimal(String campo, String valor) double$
+            +cedula(String valor) String$
+            +telefono(String valor) String$
+            +anio(String valor) int$
+            +fecha(String campo, String valor) LocalDate$
+        }
+    }
+
+    namespace interfaz {
+        class Main {
+            +main(String[] args) void$
+        }
+    }
+
+    Vehiculo <|-- Moto : herencia
+    Vehiculo <|-- MotoElectrica : herencia
+    Vehiculo "1" *-- "*" Mantenimiento : historial
+    Vehiculo "*" --> "0..1" Repartidor : asignada a
+    Vehiculo --> EstadoDisponibilidad
+    Mantenimiento --> TipoServicio
+    EstadoServicio --> TipoServicio
+    EstadoServicio --> EstadoMantenimiento
+
+    GestorFlota o-- "*" Vehiculo : vehiculos
+    GestorFlota o-- "*" Repartidor : repartidores
+    GestorFlota --> GestorAlertas : usa
+    GestorReportes --> GestorFlota : usa
+    GestorReportes --> GestorAlertas : usa
+    GestorAlertas ..> Vehiculo : evalua
+    GestorAlertas ..> EstadoServicio : crea
+
+    Main ..> GestorFlota
+    Main ..> GestorAlertas
+    Main ..> GestorReportes
+    Main ..> Validador
